@@ -1,0 +1,108 @@
+# Sample of how to deploy to an Azure Synapse serverless SQL Pool
+# You can use a self-hosted agent installed locally for this to work
+# You can also use a Microsoft-hosted agent for the Azure services
+# However, you may need to install additional software on the Microsoft-hosted agent (e.g. latest .NET SDK and SQLPackage)
+
+# For this pipeline you also need to setup the below pipeline variables
+  # agentpool - The name of the pool your local Azure DevOps Agent has been setup in
+  # BuildConfiguration - Configuration you want the build to be (e.g. Release)
+  # SQLPoolartifactname - Name you want to five the created artifact
+  # AzureSubscription - The Azure subscription you use, 
+      # either it's full name or a service connection
+      # However, if using the full name for the variable it cannot be secret
+      # You will also need to give your pipeline permission when you first run it
+      # I recommend creating a service connection in PROJECT SETTINGS instead 
+      # of using full account details
+  # SQLPoolEndPoint - Your serverless SQL Pool endpoint
+  # DestinationDB - The database you want the update deployed to in the serverless SQL Pool
+  # SQLPooluser - User name to connect to the dedicated SQL Pool endpoint, try and keep this secret
+  # SQLPoolpw - Password of above user, definitely keep this one secret
+  # DacpacFile - Name of the dacpac file, typicall the same name as the sqlproj file (e.g. ServerlessSQLPool-HomemadeProject.dacpac )
+# You can create these variables in the pipeline directly
+# Or alternatively in a variable group called Azure
+# Which you can do using the LIBRARY feature
+# I have commented out an example which you can use to set the environment in the AzureSQLPool stage
+# Which I recommend if looking to deploy to multiple environments
+# To make it more secure you can add these variables as secrets in keyvault 
+# And link it to the variable group instead
+
+# Changed to use the variable group: SQLPackageTest
+variables:
+- group: SQLPackageTest
+
+
+# Take note that if this is added as a pipeline any updates of main branch triggers it
+trigger:
+- main
+
+# This is the name of the pool you have setup your local Azure DevOps Agent in
+pool: 
+  name: $(agentpool)
+
+# To use a Microsoft-hosted pool instead comment out the above and uncomment the below:
+# pool: 
+#   vmimage: windows-latest
+
+stages:
+
+- stage: Pooldacpac
+  displayName: 'Build dacpac'
+
+  jobs:
+    - job: 'Builddacpac'
+      displayName: 'Build SQL Pool dacpac'
+      
+      steps:
+     
+      - task: DotNetCoreCLI@2
+        displayName: 'Builds the dacpac using dotnet'
+        inputs:
+          command: 'build'
+          projects: 'ServerlessSQLPool-HomemadeProject.sqlproj'
+          arguments: '--configuration $(BuildConfiguration)'
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publishes dacpac as an artifact'
+        # Publishes the dacpac as part of an artifact within Azure DevOps
+        inputs:
+          PathtoPublish: 'bin\$(BuildConfiguration)'
+          ArtifactName: $(SQLPoolartifactname)
+          publishLocation: 'Container'
+
+# Now lets deploy to a serverless SQL Pool
+- stage: AzureSQLPool
+  displayName: 'SQL Pool'
+  jobs:
+    - deployment: 'SQLPool'
+      displayName: 'Serverless SQL Pool'
+      environment: Azure
+
+      pool: 
+        name: $(agentpool)
+
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+                  - task: DownloadBuildArtifacts@0
+                    displayName: 'Dowload Artifacts'
+                    inputs:
+                      buildType: 'current'
+                      downloadType: 'specific'
+                      artifactName:  '$(SQLPoolartifactname)'
+                      downloadPath: '$(System.ArtifactsDirectory)'
+
+                  - task: SqlAzureDacpacDeployment@1
+                    displayName: 'Install DACPAC on serverless SQL Pool'
+                    inputs:
+                      azureSubscription: $(AzureSubscription)
+                      AuthenticationType: 'server'
+                      ServerName: $(SQLPoolEndPoint)
+                      DatabaseName: '$(DestinationDB)'
+                      SqlUsername: '$(SQLPooluser)'
+                      SqlPassword: '$(SQLPoolpw)'
+                      deployType: 'DacpacTask'
+                      DeploymentAction: 'Publish'
+                      DacpacFile: '$(System.ArtifactsDirectory)\$(SQLPoolartifactname)\$(DacpacFile)'
+
+

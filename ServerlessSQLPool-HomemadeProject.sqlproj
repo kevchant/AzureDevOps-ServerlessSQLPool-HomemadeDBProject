@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build">
+  <Sdk Name="Microsoft.Build.Sql" Version="0.1.9-preview" />
+  <PropertyGroup>
+    <Name>ServerlessSQLPool-HomemadeProject</Name>
+    <SchemaVersion>3.1</SchemaVersion>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.SqlServerlessDatabaseSchemaProvider</DSP>
+    <ModelCollation>1033, CI</ModelCollation>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+  </PropertyGroup>
+</Project>
