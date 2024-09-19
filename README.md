@@ -1,6 +1,6 @@
 # AzureDevOps-ServerlessSQLPool-HomemadeDBProject
 
-Example of a homemade database project that you can use create a dacpac file and deploy it to an Azure Synapse serverless SQL Pool using Azure DevOps. Based on a blog post I wrote called '[Homemade serverless SQL Pool Database Project](https://www.kevinrchant.com/2023/02/28/homemade-serverless-sql-pool-database-project/)'
+Example of a homemade [SQL database project](https://learn.microsoft.com/en-us/sql/tools/sql-database-projects/sql-database-projects?view=sql-server-ver16&WT.mc_id=DP-MVP-5004032%3Fview%3Dsql-server-ver16) that you can use create a dacpac file and deploy it to an Azure Synapse serverless SQL Pool using Azure DevOps. Based on a blog post I wrote called '[Homemade serverless SQL Pool Database Project](https://www.kevinrchant.com/2023/02/28/homemade-serverless-sql-pool-database-project/)'
 
 You can find the YAML file which you can use as a template to perform CI/CD using Azure pipelines in the AzureDevOpsTemplates folder.
 
